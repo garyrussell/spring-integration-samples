@@ -12,7 +12,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.integration.version>2.1.0.RC1</spring.integration.version>
+        <spring.integration.version>2.1.1.BUILD-SNAPSHOT</spring.integration.version>
         <slf4j.version>1.6.4</slf4j.version>
         <junit.version>4.10</junit.version>
     </properties>
@@ -104,7 +104,12 @@
             <artifactId>spring-integration-stream</artifactId>
             <version>${spring.integration.version}</version>
         </dependency>
-                
+        <dependency>
+            <groupId>org.springframework.amqp</groupId>
+            <artifactId>spring-rabbit</artifactId>
+            <version>1.0.1.BUILD-SNAPSHOT</version>
+        </dependency>
+
         <!-- Logging -->
 
         <dependency>

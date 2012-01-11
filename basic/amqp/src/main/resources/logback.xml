@@ -13,11 +13,11 @@
     </logger>
 
     <logger name="org.springframework">
-        <level value="INFO" />
+        <level value="TRACE" />
     </logger>
 
     <root>
-        <level value="INFO" />
+        <level value="TRACE" />
         <appender-ref ref="CONSOLE" />
     </root>
 
