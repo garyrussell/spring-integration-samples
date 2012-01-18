@@ -11,7 +11,7 @@
 		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean class="org.springframework.integration.handler.RetryBeanPostProcessor" />
+    <bean class="org.springframework.integration.samples.amqp.RetryBeanPostProcessor" />
 
     <int:channel id="toRabbit" />
 
@@ -34,11 +34,15 @@
 
     <rabbit:connection-factory id="connectionFactory" addresses="host1,host2" />
 
-    <rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue-arguments="x-ha-policy=all" />
+    <rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue-arguments="haArgs" />
 
     <rabbit:admin connection-factory="connectionFactory" />
 
-    <rabbit:queue name="si.test.queue" />
+	<rabbit:queue-arguments id="haArgs">
+		<entry key="x-ha-policy" value="all" />
+	</rabbit:queue-arguments>
+
+    <rabbit:queue name="si.test.queue" queue-arguments="haArgs" />
 
     <rabbit:direct-exchange name="si.test.exchange">
         <rabbit:bindings>
