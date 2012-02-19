@@ -39,7 +39,7 @@ public class ClusterTests {
                 new ClassPathXmlApplicationContext("classpath:META-INF/spring/integration/gateway-context.xml");
 		MessageChannel toRabbit = context.getBean("toRabbit", MessageChannel.class);
 		QueueChannel reply = context.getBean("reply", QueueChannel.class);
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			Message<String> message = new GenericMessage<String>("Hello, world!" + i);
 			toRabbit.send(message);
 			Message<?> out = reply.receive(5000);

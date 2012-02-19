@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
@@ -39,6 +41,8 @@ import org.springframework.util.PatternMatchUtils;
 public class RetryBeanPostProcessor implements BeanPostProcessor {
 
 	private volatile String[] beanNamePatterns = new String[] {"*"};
+
+	private final static Log logger = LogFactory.getLog(RetryBeanPostProcessor.class);
 
 	/**
 	 * @param beanNamePatterns an array of patterns used to match
@@ -88,6 +92,9 @@ public class RetryBeanPostProcessor implements BeanPostProcessor {
 
 			for (int i = 0; i < TRIES; i++) {
 				try {
+					if (i > 0) {
+						logger.debug("Retrying...");
+					}
 					Object result = invocation.proceed();
 					return result;
 				}

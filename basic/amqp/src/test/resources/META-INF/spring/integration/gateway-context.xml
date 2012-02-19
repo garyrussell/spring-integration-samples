@@ -5,15 +5,17 @@
 	xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
 	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:task="http://www.springframework.org/schema/task"
 	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
 		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd
 		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean class="org.springframework.integration.samples.amqp.RetryBeanPostProcessor" />
+	<bean class="org.springframework.integration.samples.amqp.RetryBeanPostProcessor" />
 
-    <int:channel id="toRabbit" />
+	<int:channel id="toRabbit" />
 
 	<int-amqp:outbound-gateway request-channel="toRabbit" reply-channel="reply"
 		amqp-template="amqpTemplate"
@@ -23,31 +25,85 @@
 		<int:queue/>
 	</int:channel>
 
-	<int-amqp:inbound-gateway request-channel="fromRabbit"
+	<int-amqp:inbound-gateway request-channel="fromRabbit" task-executor="inbound-exec1"
 		queue-names="si.test.queue" connection-factory="connectionFactory" />
 
     <int:channel id="fromRabbit" />
 
-	<int:service-activator input-channel="fromRabbit" expression="'echo:' + payload"/>
+	<int-amqp:outbound-gateway request-channel="fromRabbit"
+		amqp-template="amqpTemplate2"
+		exchange-name="si.test.exchange" routing-key="si.test.binding2" />
 
-    <!-- Infrastructure -->
+	<int-amqp:inbound-gateway request-channel="fromRabbit2"  task-executor="inbound-exec2"
+		queue-names="si.test.queue2" connection-factory="connectionFactory" />
 
-    <rabbit:connection-factory id="connectionFactory" addresses="host1,host2" />
+    <int:channel id="fromRabbit2" />
 
-    <rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue-arguments="haArgs" />
+	<int-amqp:outbound-gateway request-channel="fromRabbit2"
+		amqp-template="amqpTemplate3"
+		exchange-name="si.test.exchange" routing-key="si.test.binding3" />
 
-    <rabbit:admin connection-factory="connectionFactory" />
+	<int-amqp:inbound-gateway request-channel="fromRabbit3" task-executor="inbound-exec3"
+		queue-names="si.test.queue3" connection-factory="connectionFactory" />
+
+	<int:channel id="fromRabbit3" />
+
+	<int:service-activator input-channel="fromRabbit3" expression="'echo:' + payload"/>
+
+	<!-- Infrastructure -->
+
+	<rabbit:connection-factory id="connectionFactory" addresses="legolas,localhost" />
+
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue="si.test.replies" />
+
+	<rabbit:listener-container id="replyContainer" connection-factory="connectionFactory" task-executor="reply-exec">
+		<rabbit:listener ref="amqpTemplate" queues="si.test.replies"/>
+	</rabbit:listener-container>
+
+	<rabbit:template id="amqpTemplate2" connection-factory="connectionFactory" reply-queue="si.test.replies2" />
+
+	<rabbit:listener-container id="replyContainer2" connection-factory="connectionFactory" task-executor="reply-exec2">
+		<rabbit:listener ref="amqpTemplate2" queues="si.test.replies2"/>
+	</rabbit:listener-container>
+
+	<rabbit:template id="amqpTemplate3" connection-factory="connectionFactory" reply-queue="si.test.replies3" />
+
+	<rabbit:listener-container id="replyContainer3" connection-factory="connectionFactory" task-executor="reply-exec3">
+		<rabbit:listener ref="amqpTemplate3" queues="si.test.replies3"/>
+	</rabbit:listener-container>
+
+	<task:executor id="reply-exec" />
+	<task:executor id="reply-exec2" />
+	<task:executor id="reply-exec3" />
+
+	<task:executor id="inbound-exec1" />
+	<task:executor id="inbound-exec2" />
+	<task:executor id="inbound-exec3" />
+
+	<rabbit:admin connection-factory="connectionFactory" />
 
 	<rabbit:queue-arguments id="haArgs">
 		<entry key="x-ha-policy" value="all" />
 	</rabbit:queue-arguments>
 
-    <rabbit:queue name="si.test.queue" queue-arguments="haArgs" />
+	<rabbit:queue name="si.test.queue" queue-arguments="haArgs" />
 
-    <rabbit:direct-exchange name="si.test.exchange">
-        <rabbit:bindings>
-            <rabbit:binding queue="si.test.queue" key="si.test.binding" />
-        </rabbit:bindings>
+	<rabbit:queue name="si.test.queue2" queue-arguments="haArgs" />
+
+	<rabbit:queue name="si.test.queue3" queue-arguments="haArgs" />
+
+	<rabbit:queue name="si.test.replies" queue-arguments="haArgs" />
+
+	<rabbit:queue name="si.test.replies2" queue-arguments="haArgs" />
+
+	<rabbit:queue name="si.test.replies3" queue-arguments="haArgs" />
+
+	<rabbit:direct-exchange name="si.test.exchange">
+		<rabbit:bindings>
+			<rabbit:binding queue="si.test.queue" key="si.test.binding" />
+			<rabbit:binding queue="si.test.queue2" key="si.test.binding2" />
+			<rabbit:binding queue="si.test.queue3" key="si.test.binding3" />
+		</rabbit:bindings>
     </rabbit:direct-exchange>
 
 </beans>
