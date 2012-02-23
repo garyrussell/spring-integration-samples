@@ -54,23 +54,17 @@
 
 	<rabbit:connection-factory id="connectionFactory" addresses="legolas,localhost" />
 
-	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue="si.test.replies" />
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" reply-queue="si.test.replies">
+		<rabbit:reply-listener task-executor="reply-exec" />
+	</rabbit:template>
 
-	<rabbit:listener-container id="replyContainer" connection-factory="connectionFactory" task-executor="reply-exec">
-		<rabbit:listener ref="amqpTemplate" queues="si.test.replies"/>
-	</rabbit:listener-container>
+	<rabbit:template id="amqpTemplate2" connection-factory="connectionFactory" reply-queue="si.test.replies2">
+		<rabbit:reply-listener task-executor="reply-exec2" />
+	</rabbit:template>
 
-	<rabbit:template id="amqpTemplate2" connection-factory="connectionFactory" reply-queue="si.test.replies2" />
-
-	<rabbit:listener-container id="replyContainer2" connection-factory="connectionFactory" task-executor="reply-exec2">
-		<rabbit:listener ref="amqpTemplate2" queues="si.test.replies2"/>
-	</rabbit:listener-container>
-
-	<rabbit:template id="amqpTemplate3" connection-factory="connectionFactory" reply-queue="si.test.replies3" />
-
-	<rabbit:listener-container id="replyContainer3" connection-factory="connectionFactory" task-executor="reply-exec3">
-		<rabbit:listener ref="amqpTemplate3" queues="si.test.replies3"/>
-	</rabbit:listener-container>
+	<rabbit:template id="amqpTemplate3" connection-factory="connectionFactory" reply-queue="si.test.replies3">
+		<rabbit:reply-listener task-executor="reply-exec3" />
+	</rabbit:template>
 
 	<task:executor id="reply-exec" />
 	<task:executor id="reply-exec2" />
