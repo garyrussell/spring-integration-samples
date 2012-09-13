@@ -9,7 +9,7 @@
 	<packaging>jar</packaging>
 	<properties>
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring.integration.version>2.2.0.M4</spring.integration.version>
+		<spring.integration.version>2.2.0.BUILD-SNAPSHOT</spring.integration.version>
 		<log4j.version>1.2.16</log4j.version>
 		<junit.version>4.10</junit.version>
 	</properties>

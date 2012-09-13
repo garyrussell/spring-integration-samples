@@ -44,7 +44,7 @@
 
 	<int:service-activator input-channel="toServiceChannel" 
 					   ref="conditionalService"
-					   method="condition">
+					   method="testRetry">
 		<int:request-handler-advice-chain>
 			<ref bean="retryAdvice" />
 		</int:request-handler-advice-chain>

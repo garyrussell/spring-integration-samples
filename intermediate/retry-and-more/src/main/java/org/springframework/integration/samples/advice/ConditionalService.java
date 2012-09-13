@@ -15,6 +15,7 @@
  */
 package org.springframework.integration.samples.advice;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,7 +41,7 @@ public class ConditionalService {
 	 * @param payload
 	 * @param id
 	 */
-	public void condition(String payload, @Header("failingId") String id) {
+	public void testRetry(String payload, @Header("failingId") String id) {
 		if (payload.startsWith("fail")) {
 			int failHowManyTimes = Integer.parseInt(payload.substring(4).trim());
 			AtomicInteger failures = failCount.get(id);
@@ -57,5 +58,18 @@ public class ConditionalService {
 		}
 		logger.info("Service success for " + payload);
 		failCount.remove(id);
+	}
+
+	/**
+	 * Succeeds only if called any time in the fourth quarter of any minute (seconds 45 thru 59)
+	 * @param payload
+	 */
+	public void testCircuitBreaker(String payload) {
+		Calendar calendar = Calendar.getInstance();
+		if (calendar.get(Calendar.SECOND) < 45) {
+			logger.info("Service failure");
+			throw new RuntimeException("Service failed");
+		}
+		logger.info("Service success for " + payload);
 	}
 }
