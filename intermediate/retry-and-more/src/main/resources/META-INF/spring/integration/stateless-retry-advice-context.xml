@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<int-stream:stdin-channel-adapter channel="inputChannel">
+		<poller fixed-delay="1000" error-channel="failedChannel" />
+	</int-stream:stdin-channel-adapter>
+
+	<channel id="inputChannel"/>
+	
+	<header-enricher input-channel="inputChannel" output-channel="toServiceChannel">
+		<header name="failingId" expression="headers['id'].toString()" />
+	</header-enricher>
+
+	<service-activator input-channel="toServiceChannel" 
+					   ref="conditionalService"
+					   method="condition">
+		<request-handler-advice-chain>
+			<beans:ref bean="retryAdvice" />
+		</request-handler-advice-chain>
+	</service-activator>
+	
+	<channel id="failedChannel" />
+
+	<chain input-channel="failedChannel">
+		<transformer expression="'permanently failed:' + payload.failedMessage.payload" />
+		<int-stream:stderr-channel-adapter append-newline="true"/>
+	</chain>
+
+	<beans:bean id="conditionalService" class="org.springframework.integration.samples.advice.ConditionalService" />
+
+	<!-- Default retry advice 3 tries, no backoff, no recovery;
+	     final failure will go to poller's error channel -->
+	<beans:beans profile="default">
+		<beans:bean id="retryAdvice" class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice" />
+	</beans:beans>
+	
+	<!-- Retry advice, template with default 3 tries, exponential backoff, no recovery;
+	     final failure will go to poller's error channel -->
+	<beans:beans profile="backoff">
+		<beans:bean id="retryAdvice" class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice">
+			<beans:property name="retryTemplate">
+				<beans:bean class="org.springframework.retry.support.RetryTemplate">
+					<beans:property name="backOffPolicy">
+						<beans:bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+							<beans:property name="initialInterval" value="2000" />
+							<beans:property name="multiplier" value="2" />
+						</beans:bean>
+					</beans:property>
+				</beans:bean>
+			</beans:property>
+		</beans:bean>
+	</beans:beans>
+
+	<!-- Retry advice, template with default 3 tries, no backoff, recovery;
+	     final handled by recovery instead of going to poller's error channel -->
+	<beans:beans profile="recovery">
+		<beans:bean id="retryAdvice" class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice">
+			<beans:property name="recoveryCallback">
+				<beans:bean class="org.springframework.integration.handler.advice.ErrorMessageSendingRecoverer">
+					<beans:constructor-arg ref="recoveryChannel" />
+				</beans:bean>
+			</beans:property>
+		</beans:bean>
+		
+		<channel id="recoveryChannel" />
+		
+		<chain input-channel="recoveryChannel">
+			<transformer expression="'permanently failed:' + payload.failedMessage.payload + ' handled by recovery'" />
+			<int-stream:stderr-channel-adapter append-newline="true"/>
+		</chain>
+	</beans:beans>
+
+</beans:beans>
