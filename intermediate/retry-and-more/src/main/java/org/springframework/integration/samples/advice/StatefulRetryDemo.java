@@ -24,9 +24,9 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * @since 2.2
  *
  */
-public class StatelessRetryDemo {
+public class StatefulRetryDemo {
 
-	private static final Logger LOGGER = Logger.getLogger(StatelessRetryDemo.class);
+	private static final Logger LOGGER = Logger.getLogger(StatefulRetryDemo.class);
 
 	public static void main(String[] args) {
 		LOGGER.info("\n========================================================="
@@ -39,13 +39,13 @@ public class StatelessRetryDemo {
 				  + "\n=========================================================" );
 
 		final AbstractApplicationContext context =
-				new ClassPathXmlApplicationContext("classpath:META-INF/spring/integration/stateless-retry-advice-context.xml");
+				new ClassPathXmlApplicationContext("classpath:META-INF/spring/integration/stateful-retry-advice-context.xml");
 
 		context.registerShutdownHook();
 
 		LOGGER.info("\n========================================================="
 				  + "\n                                                          "
-				  + "\n    This is the Stateless Sample -                        "
+				  + "\n    This is the Stateful Sample -                        "
 				  + "\n                                                          "
 				  + "\n    Please enter some text and press return.              "
 				  + "\n    'fail 2' will fail twice, then succeed                "
