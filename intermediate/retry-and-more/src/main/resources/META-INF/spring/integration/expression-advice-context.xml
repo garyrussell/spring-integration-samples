@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<context:property-placeholder />
+
+	<int-file:inbound-channel-adapter
+		channel="inputChannel"
+		auto-startup="false"
+		auto-create-directory="true"
+		filename-pattern="*.txt"
+		directory="${java.io.tmpdir}/adviceDemo/">
+		<int:poller fixed-delay="500" />
+	</int-file:inbound-channel-adapter>
+
+	<int:publish-subscribe-channel id="inputChannel" ignore-failures="true"/>
+
+	<int-ftp:outbound-channel-adapter
+		channel="inputChannel"
+		session-factory="mockSessionFactory"
+		remote-directory="foo">
+		<int-ftp:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<constructor-arg value="payload.delete()" />
+				<constructor-arg ref="afterSuccessDeleteChannel" />
+				<constructor-arg value="payload.renameTo(payload.absolutePath + '.failed.to.send')" />
+				<constructor-arg ref="afterFailRenameChannel" />
+			</bean>
+		</int-ftp:request-handler-advice-chain>
+	</int-ftp:outbound-channel-adapter>
+
+	<int:bridge input-channel="inputChannel" output-channel="testWaitForDoneChannel" />
+
+	<int:channel id="testWaitForDoneChannel">
+		<int:queue />
+	</int:channel>
+
+	<bean id="mockSessionFactory" class="org.mockito.Mockito" factory-method="mock">
+		<constructor-arg value="org.springframework.integration.file.remote.session.SessionFactory" />
+	</bean>
+	
+	<int:channel id="afterSuccessDeleteChannel" />
+	
+	<int:header-value-router input-channel="afterSuccessDeleteChannel"
+			header-name="postProcessResult">
+		<int:mapping value="true" channel="goodDeleteChannel" />
+		<int:mapping value="false" channel="badDeleteChannel" />
+	</int:header-value-router>
+	
+	<int:header-value-router input-channel="afterFailRenameChannel"
+			header-name="postProcessResult">
+		<int:mapping value="true" channel="goodRenameChannel" />
+		<int:mapping value="false" channel="badRenameChannel" />
+	</int:header-value-router>
+	
+	<int:transformer input-channel="goodDeleteChannel" output-channel="goodResultChannel"
+		expression="'Removed ' + payload.absolutePath + ' after transfer'" />
+	
+	<int:transformer input-channel="badDeleteChannel" output-channel="badResultChannel"
+		expression="'Failed to remove ' + payload.absolutePath + ' after transfer'" />
+	
+	<int:transformer input-channel="goodRenameChannel" output-channel="badResultChannel"
+		expression="'Renamed ' + payload.absolutePath + ' after failed transfer'" />
+	
+	<int:transformer input-channel="badRenameChannel" output-channel="badResultChannel"
+		expression="'Failed to rename ' + payload.absolutePath + ' after failed transfer'" />
+	
+	<int:logging-channel-adapter id="goodResultChannel" level="INFO" />
+	
+	<int:logging-channel-adapter id="badResultChannel" level="ERROR"/>
+</beans>

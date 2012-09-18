@@ -23,6 +23,10 @@
 		<level value="warn" />
 	</logger>
 
+	<logger name="org.springframework.integration.handler.LoggingHandler">
+		<level value="info" />
+	</logger>
+
 	<logger name="org.springframework.integration.samples">
 		<level value="info" />
 	</logger>

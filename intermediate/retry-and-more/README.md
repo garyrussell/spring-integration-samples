@@ -3,7 +3,9 @@ Handler Advice Sample "retry-and-more"
 
 This sample shows how to use the 2.2.0 Handler Advice feature.
 
-StatelessRetryDemo shows stateless retry.
+##Stateless Retry Advice Demo
+
+This class demonstrates stateless retry.
 
 By default, it runs with a simple default retry (3 tries, no backoff, no recovery)
 
@@ -15,3 +17,36 @@ Run with -Dspring.profiles.active=recovery to run with 3 tries, no backoff, erro
 In each case enter 'fail n' where n is the number of times you want the service to fail.
 
 e.g. 'fail 2' will succeed in each case on the third try, 'fail 3' will fail permanently after the third try.
+
+
+##Stateful Retry Advice Demo
+
+This class demonstrates stateful retry.
+
+It is similar to the default version of the stateless retry but uses AMQP; you will see that the exception are thrown back to the container and the retries are re-delivered by AMQP.
+
+
+##Circuit Breaker Advice Demo
+
+Ths class demonstrates the circuit breaker advice.
+
+In this demo, the target service only succeeds in the last quarter of any minute (seconds 45-59). The breaker's threshold is set to 2, with the breaker going half-open once 15 seconds have elapsed since the last failure.
+
+You can observe the function of the advice by entering a number of messages over time, and watch the resulting messages.
+
+
+##Expression Evaluating Advice Demo
+
+This demo is in the form of two test cases; the application context is defined in expression-advice-context-xml.
+
+It is a simulation of an application with a file inbound adapter -> ftp outbound adapter.
+
+The advice on the outbound adapter evaluates an expression after the transfer - delete the file on success, rename it on failure.
+
+The results of the expression evaluation are then logged (INFO or ERROR).
+
+There are two test cases, _ExpressionAdviceSuccessfulTransferTests_ and _ExpressionAdviceFailedTransferTests_.
+
+No real FTP is involved; mocks are used to simulate the transfer.
+
+In both cases simply add a file ending with .txt in ${java.io.tmpdir}/adviceDemo (e.g. touch /tmp/x,txt) and the results will appear in the console.
