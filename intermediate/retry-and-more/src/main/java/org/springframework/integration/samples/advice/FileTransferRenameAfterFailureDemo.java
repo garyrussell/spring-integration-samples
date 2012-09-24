@@ -15,7 +15,6 @@
  */
 package org.springframework.integration.samples.advice;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.apache.commons.net.ftp.FTPFile;
@@ -23,7 +22,6 @@ import org.apache.log4j.Logger;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.integration.endpoint.SourcePollingChannelAdapter;
-import org.springframework.integration.file.remote.session.Session;
 import org.springframework.integration.file.remote.session.SessionFactory;
 
 /**
@@ -31,9 +29,9 @@ import org.springframework.integration.file.remote.session.SessionFactory;
  * @since 2.2
  *
  */
-public class FileTransferDeleteAfterSuccessDemo {
+public class FileTransferRenameAfterFailureDemo {
 
-	private static final Logger LOGGER = Logger.getLogger(FileTransferDeleteAfterSuccessDemo.class);
+	private static final Logger LOGGER = Logger.getLogger(FileTransferRenameAfterFailureDemo.class);
 
 	public static void main(String[] args) throws Exception {
 		LOGGER.info("\n========================================================="
@@ -54,9 +52,7 @@ public class FileTransferDeleteAfterSuccessDemo {
 		SessionFactory<FTPFile> sessionFactory = context.getBean(SessionFactory.class);
 		SourcePollingChannelAdapter fileInbound = context.getBean(SourcePollingChannelAdapter.class);
 
-		@SuppressWarnings("unchecked")
-		Session<FTPFile> session = mock(Session.class);
-		when(sessionFactory.getSession()).thenReturn(session);
+		when(sessionFactory.getSession()).thenThrow(new RuntimeException("Force Failure"));
 		fileInbound.start();
 
 		LOGGER.info("\n========================================================="
@@ -67,9 +63,9 @@ public class FileTransferDeleteAfterSuccessDemo {
 				  + "\n                                                          "
 				  + "\n    Place a file in ${java.io.tmpdir}/adviceDemo ending   "
 				  + "\n    with .txt                                             "
-				  + "\n    The demo simulates a file transfer followed by the    "
-				  + "\n    Advice deleting the file; the result of the deletion  "
-				  + "\n    is logged.                                            "
+				  + "\n    The demo simulates a file transfer failure followed   "
+				  + "\n    by the Advice renaming the file; the result of the    "
+				  + "\n    rename is logged.                                     "
 				  + "\n                                                          "
 				  + "\n=========================================================" );
 
