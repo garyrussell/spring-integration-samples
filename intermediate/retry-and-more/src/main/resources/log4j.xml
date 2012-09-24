@@ -19,6 +19,10 @@
 		<level value="warn" />
 	</logger>
 
+	<logger name="org.springframework.integration.dispatcher.BroadcastingDispatcher">
+		<level value="warn" />
+	</logger>
+
 	<logger name="org.springframework.integration">
 		<level value="warn" />
 	</logger>

@@ -32,14 +32,15 @@
 		remote-directory="foo">
 		<int-ftp:request-handler-advice-chain>
 			<bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
-				<constructor-arg value="payload.delete()" />
-				<constructor-arg ref="afterSuccessDeleteChannel" />
-				<constructor-arg value="payload.renameTo(payload.absolutePath + '.failed.to.send')" />
-				<constructor-arg ref="afterFailRenameChannel" />
+				<property name="onSuccessExpression" value="payload.delete()" />
+				<property name="successChannel" ref="afterSuccessDeleteChannel" />
+				<property name="onFailureExpression" value="payload.renameTo(payload.absolutePath + '.failed.to.send')" />
+				<property name="failureChannel" ref="afterFailRenameChannel" />
 			</bean>
 		</int-ftp:request-handler-advice-chain>
 	</int-ftp:outbound-channel-adapter>
 
+	<!-- Bridge the inbound channel to a queue channel so the test case can wait -->
 	<int:bridge input-channel="inputChannel" output-channel="testWaitForDoneChannel" />
 
 	<int:channel id="testWaitForDoneChannel">
@@ -50,31 +51,13 @@
 		<constructor-arg value="org.springframework.integration.file.remote.session.SessionFactory" />
 	</bean>
 	
-	<int:channel id="afterSuccessDeleteChannel" />
+	<int:transformer input-channel="afterSuccessDeleteChannel" output-channel="goodResultChannel"
+		expression="'Removal of ' + inputMessage.payload.absolutePath + ' after transfer, result:' +
+		payload" />
 	
-	<int:header-value-router input-channel="afterSuccessDeleteChannel"
-			header-name="postProcessResult">
-		<int:mapping value="true" channel="goodDeleteChannel" />
-		<int:mapping value="false" channel="badDeleteChannel" />
-	</int:header-value-router>
-	
-	<int:header-value-router input-channel="afterFailRenameChannel"
-			header-name="postProcessResult">
-		<int:mapping value="true" channel="goodRenameChannel" />
-		<int:mapping value="false" channel="badRenameChannel" />
-	</int:header-value-router>
-	
-	<int:transformer input-channel="goodDeleteChannel" output-channel="goodResultChannel"
-		expression="'Removed ' + payload.absolutePath + ' after transfer'" />
-	
-	<int:transformer input-channel="badDeleteChannel" output-channel="badResultChannel"
-		expression="'Failed to remove ' + payload.absolutePath + ' after transfer'" />
-	
-	<int:transformer input-channel="goodRenameChannel" output-channel="badResultChannel"
-		expression="'Renamed ' + payload.absolutePath + ' after failed transfer'" />
-	
-	<int:transformer input-channel="badRenameChannel" output-channel="badResultChannel"
-		expression="'Failed to rename ' + payload.absolutePath + ' after failed transfer'" />
+	<int:transformer input-channel="afterFailRenameChannel" output-channel="badResultChannel"
+		expression="'Renaming of ' + payload.failedMessage.payload.absolutePath + ' after failed transfer, result:' +
+		payload.evaluationResult" />
 	
 	<int:logging-channel-adapter id="goodResultChannel" level="INFO" />
 	

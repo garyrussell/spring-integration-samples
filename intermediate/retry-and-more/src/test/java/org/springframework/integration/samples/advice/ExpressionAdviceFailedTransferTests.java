@@ -15,6 +15,7 @@
  */
 package org.springframework.integration.samples.advice;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.when;
 
 import org.apache.commons.net.ftp.FTPFile;
@@ -22,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.integration.Message;
 import org.springframework.integration.core.PollableChannel;
 import org.springframework.integration.endpoint.SourcePollingChannelAdapter;
 import org.springframework.integration.file.remote.session.SessionFactory;
@@ -56,7 +58,8 @@ public class ExpressionAdviceFailedTransferTests {
 	public void test() {
 		System.out.println("Put a file ending .txt in ${java.io.tmpdir}/adviceDemo\n" +
 				"Test will terminate in 60 seconds if no file found");
-		testWaitForDoneChannel.receive(60000);
+		Message<?> message = testWaitForDoneChannel.receive(60000);
+		assertNotNull("No file found in 60 seconds", message);
 	}
 
 }
