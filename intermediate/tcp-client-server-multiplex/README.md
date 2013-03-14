@@ -8,3 +8,7 @@ That project uses outbound and inbound tcp gateways for communication. As discus
 An alternative is to use a new socket for each message, but this comes with a performance overhead. The solution is to use **Collaborating Channel Adapters** (see SI Reference Manual). In such a scenario, we can send multiple requests before a response is received. This is termed multiplexing.
 
 This sample demonstrates how to configure collaborating channel adapters, on both the client and server sides, and one technique for correlating the responses to the corresponding request.
+
+Starting with Spring Integration 3.0, you can now configure the adapters to transfer header information.
+
+The `AsyncUsingTemplateTest` example uses this technique - and it also shows how to avoid having to retain the `replyChannel` header by using a MessagingTemplate directly.

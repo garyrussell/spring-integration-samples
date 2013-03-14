@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<description>
+		Uses conversion service and collaborating channel adapters.
+		Uses JSON serialization and passes correlation data.
+	</description>
+
+	<context:property-placeholder />
+
+	<int:converter>
+		<bean class="org.springframework.integration.samples.tcpclientserver.ByteArrayToStringConverter" />
+	</int:converter>
+
+	<bean id="fastestWireFormatSerializer" class="org.springframework.integration.ip.tcp.serializer.ByteArrayLengthHeaderSerializer">
+		<constructor-arg value="1" />
+	</bean>
+	
+	<bean id="jsonSerializer" class="org.springframework.integration.ip.tcp.serializer.MapJsonSerializer">
+		<property name="packetDeserializer" ref="fastestWireFormatSerializer" />
+		<property name="packetSerializer" ref="fastestWireFormatSerializer" />
+	</bean>
+
+	<!-- Client side -->
+
+	<ip:tcp-connection-factory id="client"
+		type="client"
+		host="localhost"
+		port="${availableServerSocket}"
+		single-use="false"
+		serializer="jsonSerializer"
+		deserializer="jsonSerializer"
+		so-timeout="10000"
+		mapper="mapper" />
+
+	<bean id="mapper" class="org.springframework.integration.ip.tcp.connection.MessageConvertingTcpMessageMapper">
+		<constructor-arg>
+			<bean class="org.springframework.integration.support.converter.MapMessageConverter">
+				<property name="headerNames">
+					<list>
+						<value>correlationId</value>
+						<value>sequenceSize</value>
+						<value>sequenceNumber</value>
+					</list>
+				</property>
+			</bean>
+		</constructor-arg>
+	</bean>
+	
+	<int:channel id="input" />
+
+	<ip:tcp-outbound-channel-adapter id="outAdapter.client"
+		channel="input"
+		connection-factory="client" /> <!-- Collaborator -->
+
+	<!-- Asynch receive reply -->
+	<ip:tcp-inbound-channel-adapter id="inAdapter.client"
+		channel="toAggregator.client"
+		connection-factory="client" /> <!-- Collaborator -->
+
+	<!-- dataType attribute invokes the conversion service, if necessary -->
+	<int:channel id="toAggregator.client" datatype="java.lang.String" />
+
+	<!-- standard correlation and release strategies -->
+	<int:aggregator input-channel="toAggregator.client"
+		output-channel="replyChannel" />
+
+	<int:channel id="replyChannel">
+		<int:queue/>
+	</int:channel>
+
+	<!-- Server side -->
+
+	<ip:tcp-connection-factory id="server"
+		type="server"
+		port="${availableServerSocket}"
+		using-nio="true"
+		serializer="jsonSerializer"
+		deserializer="jsonSerializer"
+		mapper="mapper" />
+
+	<ip:tcp-inbound-channel-adapter id="inAdapter.server"
+		channel="toSA"
+		connection-factory="server" />
+
+	<!-- dataType attribute invokes the conversion service -->
+	<int:channel id="toSA" datatype="java.lang.String" />
+
+	<int:service-activator input-channel="toSA"
+					   output-channel="toObAdapter"
+					   ref="echoService"
+					   method="test" />
+
+	<bean id="echoService"
+		  class="org.springframework.integration.samples.tcpclientserver.EchoService" />
+
+	<int:channel id="toObAdapter" />
+
+	<ip:tcp-outbound-channel-adapter id="outAdapter.server"
+		channel="toObAdapter"
+		connection-factory="server" />
+
+</beans>
