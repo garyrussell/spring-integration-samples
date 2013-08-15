@@ -5,15 +5,20 @@
 	xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
 	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
 	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
 		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
 		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<!-- From TCP To RabbitMQ -->
 
-	<int-ip:tcp-connection-factory id="server" type="server" port="11111" />
+	<int-ip:tcp-connection-factory id="server" type="server" port="11111"
+		deserializer="lf" />
+
+	<bean id="lf" class="org.springframework.integration.ip.tcp.serializer.ByteArrayLfSerializer" />
 
 	<int-ip:tcp-inbound-channel-adapter channel="toRabbit" connection-factory="server" />
 
@@ -31,9 +36,7 @@
 
 	<int:channel id="fromRabbit" />
 
-	<int-ip:tcp-connection-factory id="client" type="client" host="localhost" port="11112"/>
-
-	<int-ip:tcp-outbound-channel-adapter channel="fromRabbit" connection-factory="client"/>
+	<int-stream:stdout-channel-adapter channel="fromRabbit" append-newline="true"/>
 
 	<!-- Infrastructure -->
 

@@ -15,8 +15,13 @@
  */
 package org.springframework.integration.samples.tcpamqp;
 
+import java.net.Socket;
+
+import javax.net.SocketFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -52,19 +57,10 @@ public final class Main {
 		final AbstractApplicationContext context =
 				new ClassPathXmlApplicationContext("classpath:META-INF/spring/integration/*-context.xml");
 
-		LOGGER.info("\n========================================================="
-				  + "\n														  "
-				  + "\n	This is the TCP-AMQP Sample -						 "
-				  + "\n														  "
-				  + "\n	Start a netcat, listening on port 11112 -			 "
-				  + "\n	netcat -l 11112									   "
-				  + "\n														  "
-				  + "\n	In another terminal, telnet to localhost 11111		"
-				  + "\n	Enter text and you will see it echoed to the netcat   "
-				  + "\n														  "
-				  + "\n	Press Enter in this console to terminate			  "
-				  + "\n														  "
-				  + "\n=========================================================" );
+		Socket socket = SocketFactory.getDefault().createSocket("localhost", 11111);
+		for (int i = 0; i < 1000; i++) {
+			socket.getOutputStream().write(("foo" + i + "\n").getBytes());
+		}
 
 		System.in.read();
 		context.close();
