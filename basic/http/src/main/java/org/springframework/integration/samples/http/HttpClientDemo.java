@@ -24,7 +24,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  */
 public class HttpClientDemo {
-	
+
 	private static Logger logger = Logger.getLogger(HttpClientDemo.class);
 
 	/**
@@ -33,7 +33,7 @@ public class HttpClientDemo {
 	public static void main(String[] args) {
 		ApplicationContext context = new ClassPathXmlApplicationContext("/META-INF/spring/integration/http-outbound-config.xml");
 		RequestGateway requestGateway = context.getBean("requestGateway", RequestGateway.class);
-		String reply = requestGateway.echo("Hello");  
+		String reply = requestGateway.echo("{\"foo\" : \"bar\"}");
 		logger.info("Replied with: " + reply);
 	}
 

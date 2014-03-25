@@ -9,7 +9,9 @@
 
 	<int:gateway id="requestGateway" 
 	             service-interface="org.springframework.integration.samples.http.RequestGateway"
-	             default-request-channel="requestChannel"/>
+	             default-request-channel="requestChannel">
+		<int:default-header name="content-type" value="application/json" />
+	</int:gateway>
 	
 	<int:channel id="requestChannel"/>
 

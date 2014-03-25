@@ -12,9 +12,10 @@
 
 	<int-http:inbound-gateway request-channel="receiveChannel"
                           path="/receiveGateway"
+                          request-payload-type="java.util.HashMap"
                           supported-methods="POST"/>
 
 	<int:channel id="receiveChannel"/>
 
-	<int:service-activator input-channel="receiveChannel" expression="payload + ' from the other side'"/>
+	<int:service-activator input-channel="receiveChannel" expression="payload + ' from the other side ' + payload.getClass()"/>
 </beans>
