@@ -12,7 +12,7 @@
 
 	<!-- Loggers -->
 	<logger name="org.springframework">
-		<level value="warn" />
+		<level value="debug" />
 	</logger>
 
 	<logger name="org.springframework.integration.endpoint.SourcePollingChannelAdapter">
@@ -36,7 +36,7 @@
 	</logger>
 
 	<logger name="org.springframework.retry">
-		<level value="warn" />
+		<level value="debug" />
 	</logger>
 
 	<!-- Root Logger -->

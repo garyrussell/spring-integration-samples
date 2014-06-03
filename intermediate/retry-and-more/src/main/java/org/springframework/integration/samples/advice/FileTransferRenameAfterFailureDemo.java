@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
+
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.integration.endpoint.SourcePollingChannelAdapter;
@@ -61,7 +62,7 @@ public class FileTransferRenameAfterFailureDemo {
 				  + "\n                                                          "
 				  + "\n    Press 'Enter' to terminate.                           "
 				  + "\n                                                          "
-				  + "\n    Place a file in ${java.io.tmpdir}/adviceDemo ending   "
+				  + "\n    Place a file in " + System.getProperty("java.io.tmpdir") + "/adviceDemo ending   "
 				  + "\n    with .txt                                             "
 				  + "\n    The demo simulates a file transfer failure followed   "
 				  + "\n    by the Advice renaming the file; the result of the    "

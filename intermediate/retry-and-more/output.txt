@@ -1,0 +1,24 @@
+=========================================================
+                                                          
+    This is the Expression Advice Sample -                
+                                                          
+    Press 'Enter' to terminate.                           
+                                                          
+    Place a file in /var/folders/rl/6ys7s69j2tqcjyvy8thdsd7m0000gp/T//adviceDemo ending   
+    with .txt                                             
+    The demo simulates a file transfer failure followed   
+    by the Advice renaming the file; the result of the    
+    rename is logged.                                     
+                                                          
+=========================================================
+14:47:11.431 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Retry: count=0
+14:47:11.433 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Checking for rethrow: count=1
+14:47:11.433 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Retry: count=1
+14:47:11.434 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Checking for rethrow: count=2
+14:47:11.434 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Retry: count=2
+14:47:11.434 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Checking for rethrow: count=3
+14:47:11.434 DEBUG [task-scheduler-1][org.springframework.retry.support.RetryTemplate] Retry failed last attempt: count=3
+14:47:11.434 DEBUG [task-scheduler-1][org.springframework.beans.factory.support.DefaultListableBeanFactory] Returning cached instance of singleton bean 'integrationEvaluationContext'
+14:47:11.437 DEBUG [task-scheduler-1][org.springframework.beans.factory.support.DefaultListableBeanFactory] Returning cached instance of singleton bean 'integrationEvaluationContext'
+14:47:11.440 ERROR [task-scheduler-1][org.springframework.integration.handler.LoggingHandler] Renaming of /var/folders/rl/6ys7s69j2tqcjyvy8thdsd7m0000gp/T/adviceDemo/foo.txt after failed transfer, result:true
+
