@@ -17,6 +17,7 @@ package org.springframework.integration.samples.si4demo.dsl;
 
 import java.util.Scanner;
 
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -31,6 +32,7 @@ import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.dsl.amqp.Amqp;
 import org.springframework.integration.http.inbound.HttpRequestHandlingMessagingGateway;
 import org.springframework.integration.http.inbound.RequestMapping;
 import org.springframework.integration.ip.tcp.TcpInboundGateway;
@@ -91,6 +93,9 @@ public class Application {
 	@Autowired
 	private Environment env;
 
+	@Autowired
+	private ConnectionFactory rabbitConnectionFactory;
+
 	@Bean
 	TcpNetServerConnectionFactory cf() {
 		return new TcpNetServerConnectionFactory(9876);
@@ -122,6 +127,11 @@ public class Application {
 	}
 
 	@Bean
+	public MessageChannel rejected() {
+		return new DirectChannel();
+	}
+
+	@Bean
 	public IntegrationFlow flow() {
 		return IntegrationFlows.from("requestChannel")
 				.transform(new ObjectToStringTransformer())
@@ -138,6 +148,14 @@ public class Application {
 		return IntegrationFlows.from("rejected")
 				.transform("'Error: hashtag must start with #spring; got' + payload")
 				.get();
+	}
+
+	@Bean
+	public IntegrationFlow amqp() {
+		return IntegrationFlows.from(Amqp.inboundAdapter(rabbitConnectionFactory, "si.test.queue").get())
+			.transform("new String(payload).toUpperCase()")
+			.handle(m -> System.out.println(m.getPayload()))
+			.get();
 	}
 
 	@Bean
