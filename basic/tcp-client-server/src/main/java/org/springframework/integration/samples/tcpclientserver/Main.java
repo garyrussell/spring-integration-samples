@@ -15,14 +15,14 @@
  */
 package org.springframework.integration.samples.tcpclientserver;
 
+import java.io.DataOutputStream;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.env.MapPropertySource;
-import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
-import org.springframework.integration.ip.util.TestingUtilities;
 import org.springframework.integration.test.util.SocketUtils;
 
 /**
@@ -57,8 +57,10 @@ public final class Main {
 	 * Load the Spring Integration Application Context
 	 *
 	 * @param args - command line arguments
+	 * @throws Exception
+	 * @throws
 	 */
-	public static void main(final String... args) {
+	public static void main(final String... args) throws Exception {
 
 		final Scanner scanner = new Scanner(System.in);
 
@@ -73,21 +75,29 @@ public final class Main {
 						+ "\n=========================================================" );
 
 		final GenericXmlApplicationContext context = Main.setupContext();
-		final SimpleGateway gateway = context.getBean(SimpleGateway.class);
-		final AbstractServerConnectionFactory crLfServer = context.getBean(AbstractServerConnectionFactory.class);
 
-		System.out.print("Waiting for server to accept connections...");
-		TestingUtilities.waitListening(crLfServer, 10000L);
-		System.out.println("running.\n\n");
+		for (int j = 0; j < 5; j++) {
+			new Thread(new Runnable() {
 
-		System.out.println("Please enter some text and press <enter>: ");
-		System.out.println("\tNote:");
-		System.out.println("\t- Entering FAIL will create an exception");
-		System.out.println("\t- Entering q will quit the application");
-		System.out.print("\n");
-		System.out.println("\t--> Please also check out the other samples, " +
-						"that are provided as JUnit tests.");
-		System.out.println("\t--> You can also connect to the server on port '" + crLfServer.getPort() + "' using Telnet.\n\n");
+				@Override
+				public void run() {
+					String id = java.util.UUID.randomUUID().toString();
+					try (Socket echoSocket = new Socket("localhost", 9999)) {
+						DataOutputStream dos = new DataOutputStream(echoSocket.getOutputStream());
+						for (int i = 0; i < 500; i++) {
+							String s = id + " " + i;
+					   dos.writeInt(s.length());
+							dos.write(s.getBytes());
+							dos.flush();
+							System.out.println(id + " - " + i + " - " + s.length());
+						}
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+		}
 
 		while (true) {
 
@@ -95,10 +105,6 @@ public final class Main {
 
 			if("q".equals(input.trim())) {
 				break;
-			}
-			else {
-				final String result = gateway.send(input);
-				System.out.println(result);
 			}
 		}
 
@@ -122,7 +128,7 @@ public final class Main {
 
 		System.out.println("using port " + context.getEnvironment().getProperty("availableServerSocket"));
 
-		context.load("classpath:META-INF/spring/integration/tcpClientServerDemo-context.xml");
+		context.load("classpath:META-INF/spring/integration/context.xml");
 		context.registerShutdownHook();
 		context.refresh();
 

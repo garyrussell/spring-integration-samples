@@ -15,6 +15,11 @@
  */
 package org.springframework.integration.samples.tcpclientserver;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.integration.ip.IpHeaders;
+import org.springframework.messaging.Message;
+
 /**
  * Simple service that receives data in a byte array,
  * converts it to a String and appends it to 'echo:'.
@@ -24,11 +29,13 @@ package org.springframework.integration.samples.tcpclientserver;
  */
 public class EchoService {
 
-	public String test(String input) {
+	final AtomicInteger count = new AtomicInteger();
+
+	public void test(Message<?> input) {
 		if ("FAIL".equals(input)) {
 			throw new RuntimeException("Failure Demonstration");
 		}
-		return "echo:" + input;
+		System.out.println(input.getPayload() + " " + input.getHeaders().get(IpHeaders.CONNECTION_ID) + " " + count.incrementAndGet());
 	}
 
 }

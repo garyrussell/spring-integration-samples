@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd">
+
+	<context:property-placeholder />
+
+	<!-- Server side -->
+
+	<int-ip:tcp-connection-factory id="crLfServer"
+		type="server"
+		task-executor="myTaskExecutor"
+		deserializer="ser"
+		port="9999"/>
+
+	<bean id="ser" class="org.springframework.integration.samples.tcpclientserver.MySerializerDeserializer"/>
+
+	<bean id="myTaskExecutor" class="org.springframework.integration.util.CompositeExecutor">
+		<constructor-arg>
+			<bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+				<property name="threadNamePrefix" value="io-" />
+				<property name="corePoolSize" value="4" />
+				<property name="maxPoolSize" value="8" />
+				<property name="queueCapacity" value="50000" />
+				<property name="rejectedExecutionHandler">
+					<bean class="org.springframework.integration.util.CallerBlocksPolicy">
+						<constructor-arg value="10000" />
+					</bean>
+				</property>
+			</bean>
+		</constructor-arg>
+		<constructor-arg>
+			<bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+				<property name="threadNamePrefix" value="assembler-" />
+				<property name="corePoolSize" value="4" />
+				<property name="maxPoolSize" value="10" />
+				<property name="queueCapacity" value="50000" />
+				<property name="rejectedExecutionHandler">
+					<bean class="org.springframework.integration.util.CallerBlocksPolicy">
+						<constructor-arg value="10000" />
+					</bean>
+				</property>
+			</bean>
+		</constructor-arg>
+	</bean>
+
+	<int-ip:tcp-inbound-channel-adapter id="gatewayCrLf"
+		connection-factory="crLfServer"
+		channel="toSA"
+		error-channel="errorChannel"/>
+
+	<int:channel id="toSA" />
+
+	<int:service-activator input-channel="toSA"
+		ref="echoService"
+		method="test"/>
+
+	<bean id="echoService"
+		class="org.springframework.integration.samples.tcpclientserver.EchoService" />
+
+	<int:transformer id="errorHandler"
+		input-channel="errorChannel"
+		expression="payload.failedMessage.payload + ':' + payload.cause.message"/>
+
+</beans>
