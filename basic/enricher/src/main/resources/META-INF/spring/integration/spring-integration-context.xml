@@ -16,10 +16,11 @@
         http://static.springsource.org/spring-integration/reference/htmlsingle/#gateway-proxy
         http://www.eaipatterns.com/MessagingGateway.html -->
     <int:gateway id="userGateway" default-request-timeout="5000"
-                 default-reply-timeout="5000"
+                 default-reply-timeout="0"
                  service-interface="org.springframework.integration.samples.enricher.service.UserService">
         <int:method name="findUser"                  request-channel="findUserEnricherChannel"/>
         <int:method name="findUserByUsername"        request-channel="findUserByUsernameEnricherChannel"/>
+        <int:method name="findUserByUsernameIfExists" request-channel="findUserByUsernameEnricherChannel2"/>
         <int:method name="findUserWithUsernameInMap" request-channel="findUserWithMapEnricherChannel"/>
     </int:gateway>
 
@@ -38,12 +39,32 @@
         <int:property name="password" expression="payload.password"/>
     </int:enricher>
 
+	<int:header-enricher input-channel="findUserByUsernameEnricherChannel2"
+		output-channel="findUserByUsernameEnricherChannel3">
+		<int:header name="foo" expression="@nullOkLookup.exchange(#root)" />
+	</int:header-enricher>
+
+    <int:enricher id="findUserByUsernameEnricher2"
+                  input-channel="findUserByUsernameEnricherChannel3"
+                  output-channel="findUserByUsernameEnricherChannel4">
+        <int:property name="email" expression="headers['foo'] == null ? null : headers['foo'].payload.email"/>
+    </int:enricher>
+
+	<int:header-filter input-channel="findUserByUsernameEnricherChannel4" header-names="foo" />
+
     <int:enricher id="findUserWithMapEnricher"
                   input-channel="findUserWithMapEnricherChannel"
                   request-channel="findUserByUsernameServiceChannel"
                   request-payload-expression="payload.username">
         <int:property name="user"    expression="payload"/>
     </int:enricher>
+
+	<int:gateway id="nullOkLookup"
+		default-request-channel="findUserByUsernameServiceChannel2"
+		default-reply-timeout="0" />
+
+	<int:transformer input-channel="findUserByUsernameServiceChannel2" output-channel="findUserByUsernameServiceChannel"
+		expression="payload.username"/>
 
     <int:service-activator id="findUserServiceActivator"
                            ref="systemService" method="findUser"

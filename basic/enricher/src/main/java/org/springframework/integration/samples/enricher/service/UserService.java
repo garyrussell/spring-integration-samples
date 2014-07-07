@@ -37,6 +37,12 @@ public interface UserService {
 	User findUserByUsername(User user);
 
     /**
+     * Retrieves a user based on the provided user. User object is routed to the
+     * "findUserByUsernameEnricherChannel2" channel.
+     */
+	User findUserByUsernameIfExists(User user);
+
+    /**
      * Retrieves a user based on the provided username that is provided as a Map
      * entry using the mapkey 'username'. Map object is routed to the
      * "findUserWithMapChannel" channel.

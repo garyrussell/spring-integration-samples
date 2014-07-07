@@ -16,6 +16,7 @@
 package org.springframework.integration.samples.enricher.service.impl;
 
 import org.apache.log4j.Logger;
+
 import org.springframework.integration.samples.enricher.User;
 
 /**
@@ -45,6 +46,9 @@ public class SystemService {
 
 	public User findUserByUsername(String username) {
 
+		if ("bar".equals(username)) {
+			return null;
+		}
 		LOGGER.info(String.format("Calling method 'findUserByUsername' with parameter: %s", username));
 
 		return new User(username, "secret", username + "@springintegration.org");

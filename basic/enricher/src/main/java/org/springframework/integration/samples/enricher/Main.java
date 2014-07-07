@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.Scanner;
 
 import org.apache.log4j.Logger;
+
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.integration.samples.enricher.service.UserService;
+import org.springframework.util.Assert;
 
 
 /**
@@ -83,6 +85,7 @@ public final class Main {
 				  + EMPTY_LINE
 				  + "\n    1: In the Enricher, pass the full User object to the request channel. "
 				  + "\n    2: In the Enricher, pass only the username to the request channel.    "
+				  + "\n    2x: In the Enricher, pass only the username (user not found).    "
 				  + "\n    3: In the Enricher, pass only the username to the request channel.    "
 				  + EMPTY_LINE
 				  + LINE_SEPARATOR);
@@ -98,12 +101,25 @@ public final class Main {
 				final User fullUser = service.findUser(user);
 				printUserInformation(fullUser);
 
-			} else if ("2".equals(input)) {
+			}
+			else if ("2".equals(input)) {
 
 				final User fullUser = service.findUserByUsername(user);
 				printUserInformation(fullUser);
 
-			} else if ("3".equals(input)) {
+			}
+			else if ("2x".equals(input)) {
+
+				User fullUser = service.findUserByUsernameIfExists(user);
+				printUserInformation(fullUser);
+				Assert.notNull(fullUser.getEmail());
+
+				fullUser = service.findUserByUsernameIfExists(new User("bar", null, null));
+				printUserInformation(fullUser);
+				Assert.isNull(fullUser.getEmail());
+
+			}
+			else if ("3".equals(input)) {
 
 				final Map<String, Object> userData = new HashMap<String, Object>();
 				userData.put("username", "foo_map");
@@ -122,6 +138,7 @@ public final class Main {
 
 		LOGGER.info("\n\nExiting application...bye.");
 
+		context.close();
 		System.exit(0);
 
 	}
