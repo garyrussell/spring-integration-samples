@@ -9,12 +9,17 @@
 
 	<import resource="SftpSampleCommon.xml"/>
 
-	<bean id="sftpSessionFactory" class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">
+	<bean id="sftpSessionFactory" class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="defaultSftpSessionFactory" />
+	</bean>
+
+	<bean id="defaultSftpSessionFactory"
+			class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">
 		<property name="host" value="${host}"/>
-		<property name="privateKey" value="classpath:META-INF/keys/sftp_rsa"/>
+		<property name="privateKey" value="${private.keyfile}"/>
 		<property name="privateKeyPassphrase" value="${passphrase}"/>
 		<property name="port" value="#{serverPort}"/>
-		<property name="user" value="${user}"/>
+		<property name="user" value="${username}"/>
 	</bean>
 
 	<int:channel id="inputChannel"/>
@@ -23,6 +28,6 @@
 				session-factory="sftpSessionFactory"
 				channel="inputChannel"
 				remote-filename-generator-expression="payload.getName() + '_foo'"
-				remote-directory="${remote.target.directory}"/>
+				remote-directory="si.sftp.sample"/>
 
 </beans>
