@@ -22,10 +22,15 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.annotation.BridgeTo;
 import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.MessagingGateway;
+import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.dsl.mail.Mail;
 import org.springframework.integration.samples.si4demo.springone.GMailProperties;
+import org.springframework.messaging.MessageChannel;
 
 /**
  *
@@ -60,8 +65,37 @@ public class FMail {
 		return f -> f
 			.transform("payload + payload")
 			.handle(String.class, (p, h) -> p.toUpperCase())
-			//RLR
-			;
+			.routeToRecipients(r ->
+				r.recipient("bridgeToNowhere", "true")
+				 .recipient("smtpChannel", "true"));
+	}
+
+	@BridgeTo
+	@Bean
+	public MessageChannel bridgeToNowhere() {
+		return new DirectChannel();
+	}
+
+	@Bean
+	public MessageChannel smtpChannel() {
+		return new DirectChannel();
+	}
+
+	@Bean
+	IntegrationFlow smtp() {
+		return IntegrationFlows.from(smtpChannel())
+				.enrichHeaders(Mail.headers()
+						.subject("SpringOne 2014")
+						.to("sispringone@gmail.com")
+						.from("sispringone@gmail.com"))
+				.handle(Mail.outboundAdapter("smtp.gmail.com")
+						.port(465)
+						.protocol("smtps")
+						.credentials(gmail.getUser(), gmail.getPassword())
+						.javaMailProperties(p ->
+							 p.put("mail.debug", "false"))
+						, e -> e.id("smtpOut"))
+				.get();
 	}
 
 }
