@@ -19,6 +19,12 @@ import org.apache.log4j.Logger;
 
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.SpelCompilerMode;
+import org.springframework.expression.spel.SpelParserConfiguration;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 
 /**
  * Starts the Spring Context and will initialize the Spring Integration message flow.
@@ -39,6 +45,23 @@ public final class SampleSimple {
 	 * @param args - command line arguments
 	 */
 	public static void main(final String... args) {
+
+		SpelParserConfiguration config = new SpelParserConfiguration(SpelCompilerMode.IMMEDIATE,
+			    SampleSimple.class.getClassLoader());
+
+		SpelExpressionParser parser = new SpelExpressionParser(config);
+
+		Expression expr = parser.parseExpression("payload + 'x'");
+
+		Message<?> message = new GenericMessage<String>("foo");
+
+		Object value = expr.getValue(message);
+		value = expr.getValue(message);
+		value = expr.getValue(message);
+
+		System.out.println(value);
+
+		System.exit(0);
 
 		LOGGER.info("\n========================================================="
 				  + "\n                                                         "

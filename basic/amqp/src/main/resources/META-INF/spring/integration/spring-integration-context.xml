@@ -13,9 +13,11 @@
 	<!-- From STDIN To RabbitMQ -->
 
 	<int-stream:stdin-channel-adapter id="consoleIn"
-		channel="toRabbit">
+		channel="foo">
 		<int:poller fixed-delay="1000" max-messages-per-poll="1" />
 	</int-stream:stdin-channel-adapter>
+
+	<int:transformer input-channel="foo" output-channel="toRabbit" expression="payload.toString() + '#{systemProperties['line.separator']}'"/>
 
 	<int:channel id="toRabbit" />
 
@@ -25,7 +27,7 @@
 
 	<!-- From RabbitMQ To STDOUT -->
 
-	<int-amqp:inbound-channel-adapter channel="fromRabbit"
+	<int-amqp:inbound-channel-adapter channel="fromRabbit" auto-startup="true"
 		queue-names="si.test.queue" connection-factory="connectionFactory" />
 
 	<int:channel id="fromRabbit">
@@ -34,7 +36,7 @@
 		</int:interceptors>
 	</int:channel>
 
-	<int:transformer input-channel="fromRabbit" output-channel="consoleOut" expression="'Received: ' + payload" />
+	<int:transformer input-channel="fromRabbit" output-channel="consoleOut" expression="'Received: ' + payload.toString()" />
 
 	<int-stream:stdout-channel-adapter id="consoleOut"
 		append-newline="true" />
