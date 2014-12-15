@@ -15,10 +15,14 @@
  */
 package org.springframework.integration.samples.amqp;
 
+import java.io.Serializable;
+
 import org.apache.log4j.Logger;
 
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.GenericMessage;
 
 /**
  * Starts the Spring Context and will initialize the Spring Integration message flow.
@@ -55,6 +59,8 @@ public final class SampleSimple {
 
 		context.registerShutdownHook();
 
+		context.getBean("toRabbit", MessageChannel.class).send(new GenericMessage<Foo>(new Foo("bar")));
+
 		LOGGER.info("\n========================================================="
 				  + "\n                                                          "
 				  + "\n    This is the AMQP Sample -                             "
@@ -67,4 +73,25 @@ public final class SampleSimple {
 				  + "\n=========================================================" );
 
 	}
+
+	@SuppressWarnings("serial")
+	public static class Foo implements Serializable {
+
+		private final String foo;
+
+		public Foo(String foo) {
+			this.foo = foo;
+		}
+
+		protected String getFoo() {
+			return foo;
+		}
+
+		@Override
+		public String toString() {
+			return "Foo [foo=" + foo + "]";
+		}
+
+	}
+
 }
