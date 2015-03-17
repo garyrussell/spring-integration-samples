@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,31 +13,43 @@
 package org.springframework.integration.samples.advance.testing.jms;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.internal.stubbing.answers.DoesNothing;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.integration.channel.QueueChannel;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.listener.DefaultMessageListenerContainer;
+import org.springframework.jms.listener.SessionAwareMessageListener;
+import org.springframework.jms.support.converter.SimpleMessageConverter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.SubscribableChannel;
-
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.support.converter.SimpleMessageConverter;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
@@ -64,6 +76,24 @@ public class JmsMockTests {
 	@Autowired
 	@Qualifier("invalidMessageChannel")
 	SubscribableChannel invalidMessageChannel;
+
+	@Autowired
+	private DefaultMessageListenerContainer container;
+
+	@Autowired
+	private QueueChannel queueChannel;
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testMessageDriven() throws Exception {
+		TextMessage message = mock(TextMessage.class);
+		when(message.getText()).thenReturn("foo");
+		Session session = mock(Session.class);
+		((SessionAwareMessageListener<TextMessage>) this.container.getMessageListener()).onMessage(message, session);
+		Message<?> received = this.queueChannel.receive(1000);
+		assertNotNull(received);
+		assertEquals("foo", received.getPayload());
+	}
 
 	/**
 	 * This test verifies that a message received on a polling JMS inbound channel adapter is
@@ -183,16 +213,24 @@ public class JmsMockTests {
 
 		protected abstract void verifyMessage(Message<?> message);
 
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see
-		 * org.springframework.integration.core.MessageHandler#handleMessage
-		 * (org.springframework.integration.Message)
-		 */
+		@Override
 		public void handleMessage(Message<?> message) throws MessagingException {
 			verifyMessage(message);
 			latch.countDown();
 		}
 	}
+
+	public static class Config {
+
+		@Bean
+		public DefaultMessageListenerContainer container() {
+			DefaultMessageListenerContainer container = spy(new DefaultMessageListenerContainer());
+			container.setConnectionFactory(mock(ConnectionFactory.class));
+			container.setDestination(mock(Destination.class));
+			doAnswer(new DoesNothing()).when(container).start();
+			return container;
+		}
+
+	}
+
 }

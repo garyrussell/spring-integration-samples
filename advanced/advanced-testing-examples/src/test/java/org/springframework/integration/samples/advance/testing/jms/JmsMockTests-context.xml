@@ -23,4 +23,14 @@
 		<constructor-arg value="org.springframework.jms.core.JmsTemplate" />
 	</bean>
 
+	<int-jms:message-driven-channel-adapter id="mdca"
+		container="container"
+		channel="queueChannel" />
+
+	<int:channel id="queueChannel">
+		<int:queue />
+	</int:channel>
+
+	<bean class="org.springframework.integration.samples.advance.testing.jms.JmsMockTests$Config" />
+
 </beans>
