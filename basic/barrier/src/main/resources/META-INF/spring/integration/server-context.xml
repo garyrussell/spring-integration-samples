@@ -12,27 +12,32 @@
 		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
 
-	<int-http:inbound-gateway request-channel="receiveChannel"
+	<int:management counts-enabled-patterns="*" stats-enabled-patterns="*" />
+
+	<int-http:inbound-gateway id="httpPostIn"
+							request-channel="receiveChannel"
 							path="/postGateway"
 							error-channel="errorChannel"
 							supported-methods="POST"/>
 
-	<int-http:inbound-gateway request-channel="createPayload"
+	<int-http:inbound-gateway id="httpGetIn"
+							request-channel="createPayload"
 							path="/getGateway"
 							error-channel="errorChannel"
 							supported-methods="GET"/>
 
-	<int:transformer input-channel="createPayload" output-channel="receiveChannel" expression="'A,B,C'" />
+	<int:transformer id="payloadForGet"
+		input-channel="createPayload" output-channel="receiveChannel" expression="'A,B,C'" />
 
 	<int:channel id="receiveChannel" />
 
-	<int:header-enricher input-channel="receiveChannel" output-channel="processChannel">
+	<int:header-enricher id="headerEnricher" input-channel="receiveChannel" output-channel="processChannel">
 		<int:header name="ackCorrelation" expression="headers['id']" />
 	</int:header-enricher>
 
 	<int:publish-subscribe-channel id="processChannel" />
 
-	<int:chain input-channel="processChannel" order="1">
+	<int:chain id="sendChain" input-channel="processChannel" order="1">
 		<int:header-filter header-names="content-type, content-length" />
 		<int:splitter delimiters="," />
 		<int-amqp:outbound-channel-adapter amqp-template="rabbitTemplate"
@@ -49,11 +54,11 @@
 		correlation-strategy-expression="headers['ackCorrelation']"
 		output-channel="transform" timeout="10000" />
 
-	<int:transformer input-channel="transform" expression="payload[1]" />
+	<int:transformer id="transformer" input-channel="transform" expression="payload[1]" />
 
 	<!-- Aggregate the publisher confirms and send the result to the barrier release channel -->
 
-	<int:chain input-channel="confirmations" output-channel="release">
+	<int:chain id="confirmChain" input-channel="confirmations" output-channel="release">
 		<int:header-filter header-names="replyChannel, errorChannel" />
 		<int:service-activator expression="payload" /> <!-- INT-3791; use s-a to retain ack header -->
 		<int:aggregator>
@@ -63,11 +68,12 @@
 
 	<int:channel id="release" />
 
-	<int:outbound-channel-adapter channel="release" ref="barrier.handler" method="trigger" />
+	<int:outbound-channel-adapter id="releaser" channel="release" ref="barrier.handler" method="trigger" />
 
 	<!-- Consumer -> nullChannel -->
 
-	<int-amqp:inbound-channel-adapter channel="nullChannel"
+	<int-amqp:inbound-channel-adapter id="amqpIn"
+		channel="nullChannel"
 		queue-names="barrier.sample.queue"
 		connection-factory="rabbitConnectionFactory" />
 	
