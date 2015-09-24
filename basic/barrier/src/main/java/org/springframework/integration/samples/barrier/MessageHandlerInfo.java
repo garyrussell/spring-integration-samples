@@ -57,11 +57,11 @@ public class MessageHandlerInfo {
 		return this.handler.getComponentName();
 	}
 
-	public long getHandleCountLong() {
+	public long getHandleCount() {
 		return this.handler.getHandleCountLong();
 	}
 
-	public long getErrorCountLong() {
+	public long getErrorCount() {
 		return this.handler.getErrorCountLong();
 	}
 
@@ -81,7 +81,7 @@ public class MessageHandlerInfo {
 		return this.handler.getStandardDeviationDuration();
 	}
 
-	public long getActiveCountLong() {
+	public long getActiveCount() {
 		return this.handler.getActiveCountLong();
 	}
 

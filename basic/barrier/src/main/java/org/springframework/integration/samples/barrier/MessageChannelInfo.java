@@ -47,15 +47,11 @@ public class MessageChannelInfo {
 		return this.channel.isLoggingEnabled();
 	}
 
-	public int getSendErrorCount() {
-		return this.channel.getSendErrorCount();
-	}
-
-	public long getSendCountLong() {
+	public long getSendCount() {
 		return this.channel.getSendCountLong();
 	}
 
-	public long getSendErrorCountLong() {
+	public long getSendErrorCount() {
 		return this.channel.getSendErrorCountLong();
 	}
 

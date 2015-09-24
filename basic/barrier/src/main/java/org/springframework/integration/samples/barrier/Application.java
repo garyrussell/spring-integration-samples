@@ -125,7 +125,7 @@ class IntegrationController implements SmartInitializingSingleton {
 		if (named != null) {
 			output = named.getComponentName();
 		}
-		return new MessageGatewayInfo(gateway, output);
+		return new MessageGatewayInfo(gateway, output, (AbstractMessageChannel) named); // TODO check type
 	}
 
 	private MessageSourceInfo sourceInfo(SourcePollingChannelAdapter adapter) {

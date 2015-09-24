@@ -15,6 +15,7 @@
  */
 package org.springframework.integration.samples.barrier;
 
+import org.springframework.integration.channel.AbstractMessageChannel;
 import org.springframework.integration.gateway.MessagingGatewaySupport;
 
 /**
@@ -26,10 +27,13 @@ public class MessageGatewayInfo {
 
 	private final MessagingGatewaySupport gateway;
 
-	private final String channel;
+	private final String output;
 
-	public MessageGatewayInfo(MessagingGatewaySupport gateway, String channel) {
+	private final AbstractMessageChannel channel;
+
+	public MessageGatewayInfo(MessagingGatewaySupport gateway, String output, AbstractMessageChannel channel) {
 		this.gateway = gateway;
+		this.output = output;
 		this.channel = channel;
 	}
 
@@ -41,8 +45,12 @@ public class MessageGatewayInfo {
 		return this.gateway.getComponentType();
 	}
 
-	public String getChannel() {
-		return channel;
+	public String getOutput() {
+		return this.output;
+	}
+
+	public long getSendCount() {
+		return this.channel.getSendCountLong();
 	}
 
 }

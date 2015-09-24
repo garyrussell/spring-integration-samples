@@ -26,11 +26,11 @@ public class MessageSourceInfo {
 
 	private final AbstractMessageSource<?> source;
 
-	private final String channel;
+	private final String output;
 
-	public MessageSourceInfo(AbstractMessageSource<?> source, String channel) {
+	public MessageSourceInfo(AbstractMessageSource<?> source, String output) {
 		this.source = source;
-		this.channel = channel;
+		this.output = output;
 	}
 
 	public String getComponentType() {
@@ -41,12 +41,12 @@ public class MessageSourceInfo {
 		return this.source.getComponentName();
 	}
 
-	public long getMessageCountLong() {
+	public long getMessageCount() {
 		return this.source.getMessageCountLong();
 	}
 
-	public String getChannel() {
-		return this.channel;
+	public String getOutput() {
+		return this.output;
 	}
 }
 
