@@ -24,9 +24,14 @@ package org.springframework.integration.samples.tcpclientserver;
  */
 public class EchoService {
 
-	public String test(String input) {
+	int n;
+
+	public String test(String input) throws Exception {
 		if ("FAIL".equals(input)) {
 			throw new RuntimeException("Failure Demonstration");
+		}
+		if (n++ > 0) {
+			Thread.sleep(3000);
 		}
 		return "echo:" + input;
 	}

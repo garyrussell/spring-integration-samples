@@ -21,8 +21,8 @@
 		type="client"
 		host="localhost"
 		port="${availableServerSocket}"
-		single-use="true"
-		so-timeout="10000"/>
+		single-use="false"
+		so-timeout="1000"/>
 
 	<int:channel id="input" />
 

@@ -15,18 +15,25 @@
  */
 package org.springframework.integration.samples.tcpclientserver;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import java.net.SocketTimeoutException;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.integration.MessagingException;
 import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
 import org.springframework.integration.ip.util.TestingUtilities;
 import org.springframework.integration.samples.tcpclientserver.support.CustomTestContextLoader;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
 
 
 /**
@@ -61,24 +68,16 @@ public class TcpClientServerDemoTest {
 	}
 
 	@Test
-	public void testHappyDay() {
-		String result = gw.send("Hello world!");
-		System.out.println(result);
-		assertEquals("echo:Hello world!", result);
-	}
-
-	@Test
-	public void testZeroLength() {
-		String result = gw.send("");
-		System.out.println(result);
-		assertEquals("echo:", result);
-	}
-
-	@Test
-	public void testFail() {
-		String result = gw.send("FAIL");
-		System.out.println(result);
-		assertEquals("FAIL:Failure Demonstration", result);
+	public void testHappyDay() throws Exception {
+		gw.send("foo");
+		Thread.sleep(50); // cause a skipped timeout
+		try {
+			gw.send("Hello world!");
+			fail("expected exception");
+		}
+		catch (MessagingException me) {
+			assertThat(me.getCause(), instanceOf(SocketTimeoutException.class));
+		}
 	}
 
 }
