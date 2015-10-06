@@ -12,12 +12,21 @@
 
 	<int-http:inbound-gateway request-channel="receiveChannel"
                           path="/receiveGateway"
+                          error-channel="errs"
                           supported-methods="POST"/>
 
 	<int:channel id="receiveChannel"/>
 
 	<int:chain input-channel="receiveChannel">
+		<int:service-activator expression="1 / 0" />
 		<int:header-filter header-names="content-type" />
 		<int:service-activator expression="payload + ' from the other side'"/>
+	</int:chain>
+
+	<int:chain input-channel="errs">
+		<int:header-enricher>
+			<int:header name="http_statusCode" value="401" />
+		</int:header-enricher>
+		<int:transformer expression="payload.failedMessage.payload" />
 	</int:chain>
 </beans>
