@@ -14,7 +14,9 @@
 			http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd">
 
 	<jms:message-driven-channel-adapter id="jmsIn"
-			destination="requestQueue"
+			destination="requestTopic"
+			subscription-durable="true"
+			subscription-name="mySub"
 			channel="jmsInChannel" />
 
 	<channel id="jmsInChannel" />
