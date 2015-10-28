@@ -18,6 +18,9 @@
 
 	<int:chain input-channel="receiveChannel">
 		<int:header-filter header-names="content-type" />
-		<int:service-activator expression="payload + ' from the other side'"/>
+		<int:service-activator>
+			<bean class="org.springframework.integration.samples.http.Foo"/>
+		</int:service-activator>
+		<int:transformer expression="payload" />
 	</int:chain>
 </beans>
