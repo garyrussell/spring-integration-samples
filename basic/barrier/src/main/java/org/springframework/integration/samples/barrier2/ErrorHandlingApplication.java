@@ -17,6 +17,7 @@
 package org.springframework.integration.samples.barrier2;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -37,7 +38,8 @@ public class ErrorHandlingApplication {
 				.run(args);
 		Gateway gateway = test.getBean(Gateway.class);
 		try {
-			gateway.process(Arrays.asList(2, 0, 2, 0, 2), "foo");
+			Collection<String> result = gateway.process(Arrays.asList(2, 0, 2, 0, 2), "foo");
+			System.out.println(result);
 		}
 		catch (Exception e) {
 			System.err.println(e.toString());

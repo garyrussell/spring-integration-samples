@@ -24,6 +24,6 @@ import java.util.Collection;
  */
 public interface Gateway {
 
-	public void process(Collection<Integer> numbers, String correlationId);
+	public Collection<String> process(Collection<Integer> numbers, String correlationId);
 
 }

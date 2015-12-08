@@ -17,9 +17,28 @@
 
 	<int:publish-subscribe-channel id="processChannel" />
 
-	<int:splitter input-channel="processChannel" output-channel="process" order="1" />
+	<int:splitter input-channel="processChannel" output-channel="someCheckGate" order="1"/>
+
+	<int:channel id="someCheckGate"/>
+
+	<int:router input-channel="someCheckGate" apply-sequence="false" default-output-channel="toAgg" expression="1 eq 1">
+		<int:mapping value="true" channel="toAgg"/>
+		<int:mapping value="false" channel="toAgg"/>
+	</int:router>
+
+	<int:channel id="toAgg">
+		<int:queue />
+	</int:channel>
+
+	<int:bridge input-channel="toAgg" output-channel="aggregatorChannel">
+		<int:poller fixed-delay="1000" />
+	</int:bridge>
 
 	<int:channel id="process">
+		<int:queue />
+	</int:channel>
+
+	<int:channel id="toAgg">
 		<int:queue />
 	</int:channel>
 
@@ -33,8 +52,12 @@
 	<!-- Suspend the calling thread until the aggregation is complete -->
 
 	<int:barrier id="barrier" input-channel="processChannel" order="2"
+		output-channel="transform"
+		requires-reply="true"
 		correlation-strategy-expression="headers['barrierCorrelation']"
 		timeout="10000" />
+
+	<int:transformer input-channel="transform" expression="payload[1]" />
 
 	<!-- Aggregate the results and send the result to the barrier release channel -->
 
