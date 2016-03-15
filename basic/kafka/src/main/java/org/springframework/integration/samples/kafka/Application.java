@@ -79,6 +79,8 @@ public class Application {
 				.web(false)
 				.run(args);
 		MessageChannel toKafka = context.getBean("toKafka", MessageChannel.class);
+		System.out.println("Stop Kafka and hit enter");
+		System.in.read();
 		for (int i = 0; i < 10; i++) {
 			toKafka.send(new GenericMessage<>("foo" + i));
 		}
@@ -119,8 +121,11 @@ public class Application {
 		KafkaProducerContext kafkaProducerContext = new KafkaProducerContext();
 		ProducerMetadata<String, String> producerMetadata = new ProducerMetadata<>(this.topic, String.class,
 				String.class, new StringSerializer(), new StringSerializer());
+		producerMetadata.setSync(true);
 		Properties props = new Properties();
 		props.put("linger.ms", "1000");
+		props.put("reconnect.backoff.ms", "5000");
+		props.put("metadata.fetch.timeout.ms", "10000");
 		ProducerFactoryBean<String, String> producer =
 				new ProducerFactoryBean<>(producerMetadata, this.brokerAddress, props);
 		ProducerConfiguration<String, String> config =

@@ -1,0 +1,35 @@
+Stop Kafka and hit enter
+09:17:47.215 [pool-2-thread-1] WARN  kafka.client.ClientUtils$ - Fetching topic metadata with correlation id 0 for topics [Set(si.topic)] from broker [id:0,host:localhost,port:9092] failed
+java.nio.channels.ClosedChannelException: null
+	at kafka.network.BlockingChannel.send(BlockingChannel.scala:100)
+...
+09:17:51.028 [kafka-producer-network-thread | producer-1] WARN  o.a.kafka.common.network.Selector - Error in I/O with localhost/127.0.0.1
+java.net.ConnectException: Connection refused
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+...
+Exception in thread "main" org.springframework.messaging.MessageHandlingException: error occurred in message handler [handler]; nested exception is org.apache.kafka.common.KafkaException: java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.TimeoutException: Failed to update metadata after 10000 ms.
+	at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:139)
+	at org.springframework.integration.config.annotation.ServiceActivatorAnnotationPostProcessor$ReplyProducingMessageHandlerWrapper.handleRequestMessage(ServiceActivatorAnnotationPostProcessor.java:98)
+	at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:99)
+	at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:127)
+	at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+	at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:147)
+	at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:120)
+	at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:423)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:373)
+	at org.springframework.integration.samples.kafka.Application.main(Application.java:85)
+Caused by: org.apache.kafka.common.KafkaException: java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.TimeoutException: Failed to update metadata after 10000 ms.
+	at org.springframework.integration.kafka.support.ProducerConfiguration.send(ProducerConfiguration.java:125)
+	at org.springframework.integration.kafka.support.ProducerConfiguration.convertAndSend(ProducerConfiguration.java:133)
+	at org.springframework.integration.kafka.support.KafkaProducerContext.send(KafkaProducerContext.java:204)
+	at org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler.handleMessageInternal(KafkaProducerMessageHandler.java:111)
+	at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:127)
+	... 10 more
+Caused by: java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.TimeoutException: Failed to update metadata after 10000 ms.
+	at org.apache.kafka.clients.producer.KafkaProducer$FutureFailure.<init>(KafkaProducer.java:437)
+	at org.apache.kafka.clients.producer.KafkaProducer.send(KafkaProducer.java:352)
+	at org.apache.kafka.clients.producer.KafkaProducer.send(KafkaProducer.java:248)
+	at org.springframework.integration.kafka.support.ProducerConfiguration.send(ProducerConfiguration.java:104)
+	... 14 more
+Caused by: org.apache.kafka.common.errors.TimeoutException: Failed to update metadata after 10000 ms.
