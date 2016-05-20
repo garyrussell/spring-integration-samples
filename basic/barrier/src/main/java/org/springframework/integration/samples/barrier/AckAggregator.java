@@ -15,7 +15,6 @@
  */
 package org.springframework.integration.samples.barrier;
 
-import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.integration.aggregator.MessageGroupProcessor;
 import org.springframework.integration.store.MessageGroup;
 import org.springframework.messaging.Message;
@@ -34,7 +33,7 @@ public class AckAggregator implements MessageGroupProcessor {
 			if (builder.length() > 8) {
 				builder.append(", ");
 			}
-			builder.append(message.getPayload() + ": ack=" + message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM));
+			builder.append(message.getPayload());
 		}
 		return builder.toString();
 	}
