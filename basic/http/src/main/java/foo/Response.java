@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.integration.samples.http;
 
-import foo.Response;
+package foo;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author Oleg Zhurakousky
- * @author Gunnar Hillert
+ * @author Gary Russell
+ * @since 4.3
  *
  */
-public interface RequestGateway {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Response {
 
-	Response echo(String request);
+	@JsonProperty("id")
+	private String id;
+
+	@Override
+	public String toString() {
+		return "Response [id=" + this.id + "]";
+	}
 
 }

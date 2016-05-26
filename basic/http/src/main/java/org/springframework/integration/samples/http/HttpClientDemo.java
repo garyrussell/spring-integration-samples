@@ -19,6 +19,8 @@ import org.apache.log4j.Logger;
 
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import foo.Response;
 /**
  * @author Oleg Zhurakousky
  * @author Gary Russell
@@ -32,7 +34,7 @@ public class HttpClientDemo {
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(
 				"/META-INF/spring/integration/http-outbound-config.xml");
 		RequestGateway requestGateway = context.getBean("requestGateway", RequestGateway.class);
-		String reply = requestGateway.echo("Hello");
+		Response reply = requestGateway.echo("Hello");
 		logger.info("\n\n++++++++++++ Replied with: " + reply + " ++++++++++++\n");
 	}
 

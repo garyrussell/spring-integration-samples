@@ -18,6 +18,6 @@
 
 	<int:chain input-channel="receiveChannel">
 		<int:header-filter header-names="content-type" />
-		<int:service-activator expression="payload + ' from the other side'"/>
+		<int:service-activator expression="'{&quot;id&quot;:&quot;foo&quot;}'"/>
 	</int:chain>
 </beans>
