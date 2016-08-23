@@ -44,6 +44,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.listener.config.ContainerProperties;
+import org.springframework.kafka.support.KafkaNull;
 import org.springframework.kafka.support.TopicPartitionInitialOffset;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -84,6 +85,7 @@ public class Application {
 		for (int i = 0; i < 10; i++) {
 			toKafka.send(new GenericMessage<>("foo" + i));
 		}
+		toKafka.send(new GenericMessage<>(KafkaNull.INSTANCE));
 		PollableChannel fromKafka = context.getBean("received", PollableChannel.class);
 		Message<?> received = fromKafka.receive(10000);
 		while (received != null) {
@@ -134,6 +136,7 @@ public class Application {
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.brokerAddress);
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, "siTestGroup");
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 100);
 		props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -178,7 +181,7 @@ public class Application {
 			ZkUtils zkUtils = new ZkUtils(new ZkClient(this.zkConnect, 6000, 6000,
 				ZKStringSerializer$.MODULE$), null, false);
 			try {
-				AdminUtils.createTopic(zkUtils, topic, 1, 1, new Properties());
+				AdminUtils.createTopic(zkUtils, topic, 1, 1, new Properties(), null);
 			}
 			catch (TopicExistsException e) {
 				// no-op
