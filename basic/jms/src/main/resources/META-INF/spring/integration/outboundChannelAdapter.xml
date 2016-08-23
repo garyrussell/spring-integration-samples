@@ -17,6 +17,11 @@
 
 	<channel id="stdinToJmsoutChannel"/>
 
-	<jms:outbound-channel-adapter id="jmsout" channel="stdinToJmsoutChannel" destination="requestQueue"/>
+	<chain input-channel="stdinToJmsoutChannel">
+		<header-enricher>
+			<header name="JMSXGroupID" expression="payload.startsWith('s') ? 'foo' : 'bar'" />
+		</header-enricher>
+		<jms:outbound-channel-adapter id="jmsout" destination="requestQueue"/>
+	</chain>
 
 </beans:beans>

@@ -19,6 +19,8 @@ package org.springframework.integration.samples.jms;
 import java.util.Scanner;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.GenericMessage;
 
 /**
  * A simple bootstrap main() method for starting a pair of JMS Channel
@@ -77,7 +79,11 @@ public class Main {
 
 			if("1".equals(input.trim())) {
 				System.out.println("    Loading Channel Adapter Demo...");
-				new ClassPathXmlApplicationContext(configFilesChannelAdapterDemo, Main.class);
+				ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(configFilesChannelAdapterDemo, Main.class);
+				MessageChannel channel = ctx.getBean("stdinToJmsoutChannel", MessageChannel.class);
+				for (int i = 0; i < 1000; i++) {
+					channel.send(new GenericMessage<>("foo"));
+				}
 				break;
 			}
 			else if("2".equals(input.trim())) {

@@ -15,6 +15,7 @@
 
 	<jms:message-driven-channel-adapter id="jmsIn"
 			destination="requestQueue"
+			concurrent-consumers="5"
 			channel="jmsInChannel" />
 
 	<channel id="jmsInChannel" />
