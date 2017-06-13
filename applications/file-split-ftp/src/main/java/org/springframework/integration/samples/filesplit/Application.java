@@ -27,7 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.mail.MailProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.config.EnableIntegrationManagement;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.Pollers;
@@ -48,12 +50,16 @@ import org.springframework.messaging.MessagingException;
 
 @SpringBootApplication
 @EnableIntegrationGraphController(allowedOrigins = "http://localhost:8082")
+@EnableIntegrationManagement
 public class Application {
 
 	private static final String EMAIL_SUCCESS_SUFFIX = "emailSuccessSuffix";
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+	public static void main(String[] args) throws Exception {
+		ConfigurableApplicationContext context = SpringApplication.run(Application.class, args);
+		System.out.println("Hit enter to terminate");
+		System.in.read();
+		context.close();
 	}
 
 	@Autowired
@@ -71,7 +77,8 @@ public class Application {
 				Files.inboundAdapter(new File("/tmp/in"))
 						.preventDuplicates(false)
 						.patternFilter("*.txt"), e -> e.poller(Pollers.fixedDelay(5000)
-						.errorChannel("tfrErrors.input")))
+						.errorChannel("tfrErrors.input"))
+					.id("filesIn"))
 				.handle(Files.splitter(true, true))
 				.<Object, Class<?>>route(Object::getClass, m -> m
 						.channelMapping(FileSplitter.FileMarker.class, "markers.input")
@@ -86,7 +93,7 @@ public class Application {
 	 */
 	@Bean
 	public IntegrationFlow lines(FileWritingMessageHandler fileOut) {
-		return f -> f.handle(fileOut);
+		return f -> f.handle(fileOut, e -> e.id("writeLine"));
 	}
 
 	@Bean
@@ -106,8 +113,8 @@ public class Application {
 	@Bean
 	public IntegrationFlow markers() {
 		return f -> f.<FileSplitter.FileMarker>filter(m -> m.getMark().equals(FileSplitter.FileMarker.Mark.END),
-				e -> e.id("markerFilter"))
-				.publishSubscribeChannel(s -> s
+				e -> e.id("markerFilter").discardChannel("nullChannel"))
+					.publishSubscribeChannel(s -> s.id("pubSub")
 
 						// first trigger file flushes
 						.subscribe(sf -> sf.transform("'/tmp/out/.*\\.txt'", e -> e.id("toTriggerPattern"))
