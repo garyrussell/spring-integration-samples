@@ -20,25 +20,38 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.event.EventListener;
 import org.springframework.integration.annotation.MessagingGateway;
-import org.springframework.integration.channel.QueueChannel;
+import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.config.EnableMessageHistory;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.dsl.Transformers;
 import org.springframework.integration.dsl.context.IntegrationFlowContext;
+import org.springframework.integration.ip.IpHeaders;
+import org.springframework.integration.ip.dsl.Tcp;
 import org.springframework.integration.ip.tcp.TcpReceivingChannelAdapter;
 import org.springframework.integration.ip.tcp.TcpSendingMessageHandler;
+import org.springframework.integration.ip.tcp.connection.TcpConnectionCloseEvent;
+import org.springframework.integration.ip.tcp.connection.TcpConnectionOpenEvent;
 import org.springframework.integration.ip.tcp.connection.TcpNetClientConnectionFactory;
 import org.springframework.integration.ip.tcp.connection.TcpNetServerConnectionFactory;
 import org.springframework.integration.router.AbstractMessageRouter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
 
 @SpringBootApplication
@@ -47,12 +60,6 @@ public class DynamicTcpClientApplication {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext context = SpringApplication.run(DynamicTcpClientApplication.class, args);
-		ToTCP toTcp = context.getBean(ToTCP.class);
-		toTcp.send("foo", "localhost", 1234);
-		toTcp.send("foo", "localhost", 5678);
-		QueueChannel outputChannel = context.getBean("outputChannel", QueueChannel.class);
-		System.out.println(outputChannel.receive(10000));
-		System.out.println(outputChannel.receive(10000));
 		context.close();
 	}
 
@@ -70,6 +77,11 @@ public class DynamicTcpClientApplication {
 		return f -> f.route(new TcpRouter());
 	}
 
+	@ServiceActivator(inputChannel = "fromTcp")
+	public void receiver(String in, @Header(IpHeaders.CONNECTION_ID) String connectionId) {
+		System.out.println("Received " + in + " from " + connectionId);
+	}
+
 	// Two servers
 
 	@Bean
@@ -78,11 +90,16 @@ public class DynamicTcpClientApplication {
 	}
 
 	@Bean
-	public TcpReceivingChannelAdapter inOne(TcpNetServerConnectionFactory cfOne) {
-		TcpReceivingChannelAdapter adapter = new TcpReceivingChannelAdapter();
-		adapter.setConnectionFactory(cfOne);
-		adapter.setOutputChannel(outputChannel());
-		return adapter;
+	public IntegrationFlow inOne(TcpNetServerConnectionFactory cfOne) {
+		return IntegrationFlows.from(Tcp.inboundAdapter(cfOne))
+			.transform(Transformers.objectToString())
+			.handle(System.out::println)
+			.get();
+	}
+
+	@Bean
+	public IntegrationFlow outOne(TcpNetServerConnectionFactory cfOne) {
+		return f -> f.handle(Tcp.outboundAdapter(cfOne));
 	}
 
 	@Bean
@@ -91,16 +108,65 @@ public class DynamicTcpClientApplication {
 	}
 
 	@Bean
-	public TcpReceivingChannelAdapter inTwo(TcpNetServerConnectionFactory cfTwo) {
-		TcpReceivingChannelAdapter adapter = new TcpReceivingChannelAdapter();
-		adapter.setConnectionFactory(cfTwo);
-		adapter.setOutputChannel(outputChannel());
-		return adapter;
+	public IntegrationFlow inTwo(TcpNetServerConnectionFactory cfTwo) {
+		return IntegrationFlows.from(Tcp.inboundAdapter(cfTwo))
+				.transform(Transformers.objectToString())
+				.handle(System.out::println)
+				.get();
 	}
 
 	@Bean
-	public QueueChannel outputChannel() {
-		return new QueueChannel();
+	public IntegrationFlow outTwo(TcpNetServerConnectionFactory cfTwo) {
+		return f -> f.handle(Tcp.outboundAdapter(cfTwo));
+	}
+
+	private final Set<String> connections = ConcurrentHashMap.newKeySet();
+
+	@EventListener
+	public void openEvents(TcpConnectionOpenEvent event) {
+		if (event.getConnectionFactoryName().startsWith("cf")) {
+			System.out.println("Connection opened " + event.getConnectionId());
+			this.connections.add(event.getConnectionId());
+		}
+	}
+
+	@EventListener
+	public void closeEvents(TcpConnectionCloseEvent event) {
+		if (event.getConnectionFactoryName().startsWith("cf")) {
+			this.connections.remove(event.getConnectionId());
+		}
+	}
+
+	@Bean
+	@DependsOn({ "outOne", "outTwo", "inOne", "inTwo" })
+	public ApplicationRunner runner(ToTCP toTcp,
+			@Qualifier("outOne.input") MessageChannel outOne,
+			@Qualifier("outTwo.input") MessageChannel outTwo) {
+
+		return args -> {
+			toTcp.send("foo", "localhost", 1234);
+			toTcp.send("foo", "localhost", 5678);
+			for (int i = 0; i < 10; i++) {
+				Thread.sleep(3000);
+				this.connections.forEach(conn -> {
+					try {
+						if (conn.contains("1234")) {
+							outOne.send(MessageBuilder.withPayload("some data")
+									.setHeader(IpHeaders.CONNECTION_ID, conn)
+									.build());
+						}
+						else {
+							outTwo.send(MessageBuilder.withPayload("some other data")
+									.setHeader(IpHeaders.CONNECTION_ID, conn)
+									.build());
+						}
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
+			}
+		};
 	}
 
 	public static class TcpRouter extends AbstractMessageRouter {
@@ -130,7 +196,7 @@ public class DynamicTcpClientApplication {
 		@Override
 		protected synchronized Collection<MessageChannel> determineTargetChannels(Message<?> message) {
 			MessageChannel channel = this.subFlows
-					.get(message.getHeaders().get("host", String.class) + message.getHeaders().get("port"));
+					.get(message.getHeaders().get("host", String.class) + message.getHeaders().get("port") + ".out");
 			if (channel == null) {
 				channel = createNewSubflow(message);
 			}
@@ -146,20 +212,34 @@ public class DynamicTcpClientApplication {
 			TcpNetClientConnectionFactory cf = new TcpNetClientConnectionFactory(host, port);
 			TcpSendingMessageHandler handler = new TcpSendingMessageHandler();
 			handler.setConnectionFactory(cf);
-			IntegrationFlow flow = f -> f.handle(handler);
+
+			IntegrationFlow out = f -> f.handle(handler);
 			IntegrationFlowContext.IntegrationFlowRegistration flowRegistration =
-					this.flowContext.registration(flow)
+					this.flowContext.registration(out)
 							.addBean(cf)
-							.id(hostPort + ".flow")
+							.id(hostPort + ".out")
 							.register();
 			MessageChannel inputChannel = flowRegistration.getInputChannel();
-			this.subFlows.put(hostPort, inputChannel);
+			this.subFlows.put(hostPort + ".out", inputChannel);
+
+			TcpReceivingChannelAdapter receiver = new TcpReceivingChannelAdapter();
+			receiver.setConnectionFactory(cf);
+			IntegrationFlow in = IntegrationFlows.from(receiver)
+					.transform(Transformers.objectToString())
+					.channel("fromTcp")
+					.get();
+			flowRegistration =
+					this.flowContext.registration(in)
+							.id(hostPort + ".in")
+							.register();
+
 			return inputChannel;
 		}
 
 		private void removeSubFlow(Entry<String, MessageChannel> eldest) {
 			String hostPort = eldest.getKey();
-			this.flowContext.remove(hostPort + ".flow");
+			this.flowContext.remove(hostPort + ".out");
+			this.flowContext.remove(hostPort + ".in");
 		}
 
 	}
