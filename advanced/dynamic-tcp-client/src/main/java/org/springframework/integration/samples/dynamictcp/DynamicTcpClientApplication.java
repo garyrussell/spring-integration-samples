@@ -22,17 +22,19 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.integration.annotation.MessagingGateway;
-import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.config.EnableMessageHistory;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.Transformers;
 import org.springframework.integration.dsl.context.IntegrationFlowContext;
-import org.springframework.integration.ip.tcp.TcpReceivingChannelAdapter;
-import org.springframework.integration.ip.tcp.TcpSendingMessageHandler;
+import org.springframework.integration.ip.tcp.TcpInboundGateway;
+import org.springframework.integration.ip.tcp.TcpOutboundGateway;
 import org.springframework.integration.ip.tcp.connection.TcpNetClientConnectionFactory;
 import org.springframework.integration.ip.tcp.connection.TcpNetServerConnectionFactory;
 import org.springframework.integration.router.AbstractMessageRouter;
@@ -47,13 +49,16 @@ public class DynamicTcpClientApplication {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext context = SpringApplication.run(DynamicTcpClientApplication.class, args);
-		ToTCP toTcp = context.getBean(ToTCP.class);
-		toTcp.send("foo", "localhost", 1234);
-		toTcp.send("foo", "localhost", 5678);
-		QueueChannel outputChannel = context.getBean("outputChannel", QueueChannel.class);
-		System.out.println(outputChannel.receive(10000));
-		System.out.println(outputChannel.receive(10000));
 		context.close();
+	}
+
+	@Bean
+	@DependsOn("toTcp")
+	public ApplicationRunner runner(ToTCP toTcp) {
+		return args -> {
+			System.out.println(toTcp.send("foo", "localhost", 1234));
+			System.out.println(toTcp.send("foo", "localhost", 5678));
+		};
 	}
 
 	// Client side
@@ -61,7 +66,7 @@ public class DynamicTcpClientApplication {
 	@MessagingGateway(defaultRequestChannel = "toTcp.input")
 	public interface ToTCP {
 
-		public void send(String data, @Header("host") String host, @Header("port") int port);
+		public String send(String data, @Header("host") String host, @Header("port") int port);
 
 	}
 
@@ -78,10 +83,10 @@ public class DynamicTcpClientApplication {
 	}
 
 	@Bean
-	public TcpReceivingChannelAdapter inOne(TcpNetServerConnectionFactory cfOne) {
-		TcpReceivingChannelAdapter adapter = new TcpReceivingChannelAdapter();
+	public TcpInboundGateway inOne(TcpNetServerConnectionFactory cfOne) {
+		TcpInboundGateway adapter = new TcpInboundGateway();
 		adapter.setConnectionFactory(cfOne);
-		adapter.setOutputChannel(outputChannel());
+		adapter.setRequestChannelName("upcase.input");
 		return adapter;
 	}
 
@@ -91,16 +96,17 @@ public class DynamicTcpClientApplication {
 	}
 
 	@Bean
-	public TcpReceivingChannelAdapter inTwo(TcpNetServerConnectionFactory cfTwo) {
-		TcpReceivingChannelAdapter adapter = new TcpReceivingChannelAdapter();
+	public TcpInboundGateway inTwo(TcpNetServerConnectionFactory cfTwo) {
+		TcpInboundGateway adapter = new TcpInboundGateway();
 		adapter.setConnectionFactory(cfTwo);
-		adapter.setOutputChannel(outputChannel());
+		adapter.setRequestChannelName("upcase.input");
 		return adapter;
 	}
 
 	@Bean
-	public QueueChannel outputChannel() {
-		return new QueueChannel();
+	public IntegrationFlow upcase() {
+		return f -> f.transform(Transformers.objectToString())
+				.<String, String>transform(String::toUpperCase);
 	}
 
 	public static class TcpRouter extends AbstractMessageRouter {
@@ -144,9 +150,11 @@ public class DynamicTcpClientApplication {
 			String hostPort = host + port;
 
 			TcpNetClientConnectionFactory cf = new TcpNetClientConnectionFactory(host, port);
-			TcpSendingMessageHandler handler = new TcpSendingMessageHandler();
+			TcpOutboundGateway handler = new TcpOutboundGateway();
 			handler.setConnectionFactory(cf);
-			IntegrationFlow flow = f -> f.handle(handler);
+			IntegrationFlow flow = f -> f
+					.handle(handler)
+					.transform(Transformers.objectToString());
 			IntegrationFlowContext.IntegrationFlowRegistration flowRegistration =
 					this.flowContext.registration(flow)
 							.addBean(cf)
